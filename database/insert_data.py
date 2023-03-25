@@ -14,17 +14,20 @@ Session = sessionmaker(bind=engine)
 
 
 def register_new_sale(buyer_id, listing_id, sell_price_in_cents, sell_date=None):
-    """
-    Check first if there is a referenced listing, buyer, and office for this proposed listing and if not rollback.
-    If there is, proceed to add new listing to the database. 
-    At that step, we check if the proposed listing is still available as that may change if the owner has sold the house through another listing.
-
+    '''
+    Check first if the buyer is registered and the listing is available.
+    If not, rollback the transaction.
+    If yes, proceed to add new sale to the database.
+    
     Args:
-        buyer_id (integer): The buyer id that represents the person hoping to buy the listing.
-        listing_id (integer): The listing id that represents the listing being suggested for a sale
-        sell_price_in_cents (integer): The bid price proposed by the buyer and accepted by the seller.
-        sell_date (_type_, optional): The date that the proposed listing was sold. Defaults to None.
-    """
+        buyer_id (integer): The id of the buyer
+        listing_id (integer): The id of the listing
+        sell_price_in_cents (integer): The price of the sale in cents
+        sell_date (datetime): The date of the sale
+
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
     if buyer_id is None or listing_id is None or sell_price_in_cents is None:
@@ -58,29 +61,32 @@ def register_new_sale(buyer_id, listing_id, sell_price_in_cents, sell_date=None)
         session.add(new_sale)
         session.commit()
         print(new_sale)
-    except:
+    except Exception:
         session.rollback()
 
 
 def register_new_house(no_of_bedrooms, no_of_bathrooms, address, zip_code):
-    """
-    Check first if there is an house that is already covered by the proposed address and rollback if already present.
-    If not, proceed to add new house to the database.
-
+    '''
+    Check first if there is a house registered for the given address.
+    If yes, rollback the transaction.
+    If no, proceed to add new house to the database.
+    
     Args:
-        no_of_bedrooms (integer): The number of bedrooms in the house to be registered
-        no_of_bathrooms (integer): The number of bathrooms in the house to be registered
-        address (text): The address of the house to be registered
-        zip_code (integer): The zip code representing the locaiton of the house to be registered
-    """
+        no_of_bedrooms (integer): The number of bedrooms in the house
+        no_of_bathrooms (integer): The number of bathrooms in the house
+        address (string): The address of the house
+        zip_code (integer): The zip code of the house
+        
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
     if no_of_bedrooms is None or no_of_bathrooms is None or address is None or zip_code is None:
         print("None of the parameters should be None")
         session.rollback()
         return
-    house = session.query(House).filter(House.address == address).first()
-    if house:
+    if house := session.query(House).filter(House.address == address).first():
         print("A house has already been registered for that address")
         session.rollback()
         return
@@ -90,22 +96,27 @@ def register_new_house(no_of_bedrooms, no_of_bathrooms, address, zip_code):
         session.add(new_house)
         session.commit()
         print(new_house)
-    except:
+    except Exception:
         session.rollback()
 
 
 def register_new_listing(house_id, seller_id, listing_agent_id, listing_office_id, listing_price_in_cents, listing_date=None):
-    """
-    Check first if there is a referenced house, seller, agent, and office for this proposed listing and if not rollback.
-    If there is, proceed to add new listing to the database.
-
+    '''
+    Check first if the house, seller, listing agent and listing office are registered.
+    If not, rollback the transaction.
+    If yes, proceed to add new listing to the database.
+    
     Args:
-        house_id (integer): The house id that represents the home being sold.
-        seller_id (integer): The seller id that represents the owner hoping to sell their house.
-        listing_agent_id (integer): The agent id that represents the agent hosting the proposed listing.
-        listing_office_id (integer): The office id that represents the office hosting the proposed listing.
-        listing_price_in_cents (integer): The asking price for this listing as requested by the seller.
-    """
+        house_id (integer): The id of the house
+        seller_id (integer): The id of the seller
+        listing_agent_id (integer): The id of the listing agent
+        listing_office_id (integer): The id of the listing office
+        listing_price_in_cents (integer): The price of the listing in cents
+        listing_date (datetime): The date of the listing
+        
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
     if house_id is None or seller_id is None or listing_agent_id is None or listing_office_id is None or listing_price_in_cents is None:
@@ -146,23 +157,29 @@ def register_new_listing(house_id, seller_id, listing_agent_id, listing_office_i
         session.add(new_listing)
         session.commit()
         print(new_listing)
-    except:
+    except Exception:
         session.rollback()
 
 
 def register_new_office(location):
-    """
-    Check first if there is an office location that is already covered by the proposed location and rollback if already present.
-    If not, proceed to add new office location to the database.
-
+    '''
+    Check first if there is an office registered for the given location.
+    If yes, rollback the transaction.
+    If no, proceed to add new office to the database.
+    
     Args:
-        location (string): location coverage for that particular office
-    """
+        location (string): The location of the office
+        
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
-    office = session.query(Office).filter(
-        Office.location == location).first()
-    if office:
+    if (
+        office := session.query(Office)
+        .filter(Office.location == location)
+        .first()
+    ):
         print("An office has already been registered under that location")
         session.rollback()
         return
@@ -171,25 +188,31 @@ def register_new_office(location):
         session.add(new_office)
         session.commit()
         print(new_office)
-    except:
+    except Exception:
         session.rollback()
 
 
 def register_new_agent(firstName, lastName, emailAddress):
-    """
-    Check first if there is a agent that exists in the database with said email address and rollback if already present.
-    If not, proceed to add new agent to the database.
-
+    '''
+    Check first if there is an agent registered for the given email address.
+    If yes, rollback the transaction.
+    If no, proceed to add new agent to the database.
+    
     Args:
-        firstName (string): first name of the new agent
-        lastName (string): last name of the new agent
-        emailAddress (string): email address to contact the new agent
-    """
+        firstName (string): The first name of the agent
+        lastName (string): The last name of the agent
+        emailAddress (string): The email address of the agent
+        
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
-    agent = session.query(Agent).filter(
-        Agent.emailAddress == emailAddress).first()
-    if agent:
+    if (
+        agent := session.query(Agent)
+        .filter(Agent.emailAddress == emailAddress)
+        .first()
+    ):
         print("An agent has already been registered under that name")
         session.rollback()
         return
@@ -199,25 +222,31 @@ def register_new_agent(firstName, lastName, emailAddress):
         session.add(new_agent)
         session.commit()
         print(new_agent)
-    except:
+    except Exception:
         session.rollback()
 
 
 def register_new_customer(firstName, lastName, emailAddress):
-    """
-    Check first if there is a customer that exists in the database with said email address and rollback if already present.
-    If not, proceed to add new customer to the database.
-
+    '''
+    Check first if there is a customer registered for the given email address.
+    If yes, rollback the transaction.
+    If no, proceed to add new customer to the database.
+    
     Args:
-        firstName (string): first name of the new customer
-        lastName (string): last name of the new customer
-        emailAddress (string): email address to contact the new customer
-    """
+        firstName (string): The first name of the customer
+        lastName (string): The last name of the customer
+        emailAddress (string): The email address of the customer
+        
+    Returns:
+        None
+    '''
     session = Session()
     session.begin()
-    customer = session.query(Customer).filter(
-        Customer.emailAddress == emailAddress).first()
-    if customer:
+    if (
+        customer := session.query(Customer)
+        .filter(Customer.emailAddress == emailAddress)
+        .first()
+    ):
         print("A customer has already been registered under that email address")
         session.rollback()
         return
@@ -227,56 +256,124 @@ def register_new_customer(firstName, lastName, emailAddress):
         session.add(new_customer)
         session.commit()
         print(new_customer)
-    except:
+    except Exception:
         session.rollback()
 
 
 def query_data():
+    '''
+    Query the database for the following information:
+    1. Find the top 5 houses with the highest price.
+    2. Find the top 5 houses with the lowest price.
+    3. Find the top 5 houses with the highest price per square foot.
+    4. Find the top 5 houses with the lowest price per square foot.
+    5. Find the top 5 offices with the most sales for that month.
+    6. Find the top 5 estate agents who have sold the most for the month (include their contact details and their sales details so that it is easy contact them and congratulate them).
+    7. Find the top 5 estate agents who have sold the least for the month (include their contact details and their sales details so that it is easy contact them and congratulate them).
+    8. Find the top 5 estate agents who have sold the most for the year (include their contact details and their sales details so that it is easy contact them and congratulate them).
+    9. Find the top 5 estate agents who have sold the least for the year (include their contact details and their sales details so that it is easy contact them and congratulate them).
+    '''
 
     session = Session()
 
-    print('"""')
-    print('Find the top 5 offices with the most sales for that month.')
-    print('"""')
+    _extracted_from_query_data_5(
+        'Find the top 5 offices with the most sales for that month.'
+    )
     print(session.query(Office.location, func.count(Listing.house_id).label("homes_sold")).join(Listing, Office.id == Listing.listing_office_id).join(Sale, Listing.id == Sale.listing_id).filter(
         Listing.listing_state == 'SOLD', extract('month', Sale.sell_date) == datetime.now().month).group_by(Office.id).order_by(desc("homes_sold")).limit(5).all())
 
-    print('"""')
-    print('Find the top 5 estate agents who have sold the most for the month (include their contact details and their sales details so that it is easy contact them and congratulate them).')
-    print('"""')
+    _extracted_from_query_data_5(
+        'Find the top 5 estate agents who have sold the most for the month (include their contact details and their sales details so that it is easy contact them and congratulate them).'
+    )
     print(session.query(Agent.firstName, Agent.lastName, Agent.emailAddress, Sale.sell_price_IN_CENTS, Sale.sell_date).join(Listing, Listing.listing_agent_id == Agent.id).join(
         Sale, Sale.listing_id == Listing.id).filter(extract('month', Sale.sell_date) == datetime.now().month).group_by(Agent.id).order_by(desc(func.sum(Sale.sell_price_IN_CENTS))).all())
 
-    print('"""')
-    print('Calculate the commission that each estate agent must receive and store the results in a separate table.')
-    print('"""')
-    stmt = session.query(Agent, func.sum(
-        case((Sale.sell_price_IN_CENTS is None, 0),
-             (Sale.sell_price_IN_CENTS <= 10000000, 0.1*Sale.sell_price_IN_CENTS),
-             (and_(10000000 < Sale.sell_price_IN_CENTS, Sale.sell_price_IN_CENTS <=
-                   20000000), 0.075*Sale.sell_price_IN_CENTS),
-             (and_(20000000 < Sale.sell_price_IN_CENTS, Sale.sell_price_IN_CENTS <=
-                   50000000), 0.06*Sale.sell_price_IN_CENTS),
-             (and_(50000000 < Sale.sell_price_IN_CENTS, Sale.sell_price_IN_CENTS <=
-                   100000000), 0.05*Sale.sell_price_IN_CENTS),
-             else_=0.04*Sale.sell_price_IN_CENTS))).outerjoin(Listing, Listing.listing_agent_id == Agent.id).outerjoin(Sale, Sale.listing_id == Listing.id).filter(extract('month', Sale.sell_date) == datetime.now().month).group_by(Agent.id)
+    _extracted_from_query_data_5(
+        'Find the top 5 estate agents who have sold the least for the month (include their contact details and their sales details so that it is easy contact them and congratulate them).'
+    )
+    print(session.query(Agent.firstName, Agent.lastName, Agent.emailAddress, Sale.sell_price_IN_CENTS, Sale.sell_date).join(Listing, Listing.listing_agent_id == Agent.id).join(
+        Sale, Sale.listing_id == Listing.id).filter(extract('month', Sale.sell_date) == datetime.now().month).group_by(Agent.id).order_by(func.sum(Sale.sell_price_IN_CENTS)).all())
+    
+    _extracted_from_query_data_5(
+        'Find the top 5 estate agents who have sold the most for the year (include their contact details and their sales details so that it is easy contact them and congratulate them).'
+    )
+    print(session.query(Agent.firstName, Agent.lastName, Agent.emailAddress, Sale.sell_price_IN_CENTS, Sale.sell_date).join(Listing, Listing.listing_agent_id == Agent.id).join(
+        Sale, Sale.listing_id == Listing.id).filter(extract('year', Sale.sell_date) == datetime.now().year).group_by(Agent.id).order_by(desc(func.sum(Sale.sell_price_IN_CENTS))).all())
+    
+    _extracted_from_query_data_5(
+        'Find the top 5 estate agents who have sold the least for the year (include their contact details and their sales details so that it is easy contact them and congratulate them).'
+    )
+    print(session.query(Agent.firstName, Agent.lastName, Agent.emailAddress, Sale.sell_price_IN_CENTS, Sale.sell_date).join(Listing, Listing.listing_agent_id == Agent.id).join(
+        Sale, Sale.listing_id == Listing.id).filter(extract('year', Sale.sell_date) == datetime.now().year).group_by(Agent.id).order_by(func.sum(Sale.sell_price_IN_CENTS)).all())
+
+    _extracted_from_query_data_5(
+        'Calculate the commission that each estate agent must receive and store the results in a separate table.'
+
+    )
+    stmt = (
+        session.query(
+            Agent,
+            func.sum(
+                case(
+                    (Sale.sell_price_IN_CENTS is None, 0),
+                    (
+                        Sale.sell_price_IN_CENTS <= 10000000,
+                        0.1 * Sale.sell_price_IN_CENTS,
+                    ),
+                    (
+                        and_(
+                            Sale.sell_price_IN_CENTS > 10000000,
+                            Sale.sell_price_IN_CENTS <= 20000000,
+                        ),
+                        0.075 * Sale.sell_price_IN_CENTS,
+                    ),
+                    (
+                        and_(
+                            Sale.sell_price_IN_CENTS > 20000000,
+                            Sale.sell_price_IN_CENTS <= 50000000,
+                        ),
+                        0.06 * Sale.sell_price_IN_CENTS,
+                    ),
+                    (
+                        and_(
+                            Sale.sell_price_IN_CENTS > 50000000,
+                            Sale.sell_price_IN_CENTS <= 100000000,
+                        ),
+                        0.05 * Sale.sell_price_IN_CENTS,
+                    ),
+                    else_=0.04 * Sale.sell_price_IN_CENTS,
+                )
+            ),
+        )
+        .outerjoin(Listing, Listing.listing_agent_id == Agent.id)
+        .outerjoin(Sale, Sale.listing_id == Listing.id)
+        .filter(extract('month', Sale.sell_date) == datetime.now().month)
+        .group_by(Agent.id)
+    )
 
     case((Sale.sell_price_IN_CENTS is None, 0),
          (Sale.sell_price_IN_CENTS <= 10000000, 0.1*Sale.sell_price_IN_CENTS),
          (Sale.sell_price_IN_CENTS <= 10000000, 0.1*Sale.sell_price_IN_CENTS))
     print(stmt.all())
 
-    print('"""')
-    print('For all houses that were sold that month, calculate the average number of days on the market.')
-    print('"""')
+    _extracted_from_query_data_5(
+        'For all houses that were sold that month, calculate the average number of days on the market.'
+    )
     print(session.query(func.avg(cast(func.julianday(Sale.sell_date) - func.julianday(Listing.listing_date), Integer)))
           .join(Listing, Listing.id == Sale.listing_id).filter(extract('month', Sale.sell_date) == datetime.now().month).first()[0])
 
-    print('"""')
-    print('For all houses that were sold that month, calculate the average selling price.')
-    print('"""')
+    _extracted_from_query_data_5(
+        'For all houses that were sold that month, calculate the average selling price.'
+    )
     print(session.execute(select(func.avg(Sale.sell_price_IN_CENTS)).filter(
         extract('month', Sale.sell_date) == datetime.now().month)).first()[0])
+
+
+# TODO Rename this here and in `query_data`
+def _extracted_from_query_data_5(arg0):
+    print('"""')
+    print(arg0)
+    print('"""')
 
 
 if __name__ == "__main__":
