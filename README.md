@@ -30,6 +30,7 @@ The application can be run with the following steps:
         python3 query_data.py
 
  5. Reading the SQL files:
+ 
         .read create.sql
         .read insert_data.sql
         .read query_data.sql
