@@ -1,13 +1,31 @@
-from datetime import datetime
-from sqlalchemy import create_engine, Column, Text, Integer, ForeignKey, String, DateTime, VARCHAR, Enum, func, desc, case, select
+#from datetime import datetime
+from sqlalchemy import Date, create_engine, Column, Text, Integer, ForeignKey, String, DateTime, VARCHAR, Enum, func, desc, case, select
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.sql import case
+from sqlalchemy.orm import relationship, sessionmaker, column_property
 
 engine = create_engine('sqlite:///database.db')
 engine.connect()
 
-Base = sqlalchemy.orm.declarative_base()
+Base = declarative_base()
+
+
+#creating the tables
+'''
+Data normalization
+1. First normal form:
+    - Each column contains only one value
+    - Each row contains only one entity
+    - Each table contains only one entity
+    - Each table has a primary key
+2. Second normal form:
+    - All non-key columns are dependent on the primary key
+3. Third normal form:
+    - No transitive dependencies between non-key columns
+4. Foruth normal form:
+    - No multi-valued dependencies
+'''
 
 class Listing(Base):
     '''
@@ -22,7 +40,7 @@ class Listing(Base):
         listing_date (datetime): The date when the house was listed for sale.
         listing_agent_id (int): Foreign key referencing the id of the agent who listed the house for sale.
         listing_office_id (int): Foreign key referencing the id of the office where the house is listed for sale.
-        listing_price_IN_CENTS (int): The price of the house listed for sale, in cents.
+        listing_price (int): The price of the house listed for sale, in cents.
         listing_state (enum): The state of the house listing, which can be one of 'AVAILABLE', 'UNAVAILABLE', or 'SOLD'.
 
     Methods:
@@ -30,19 +48,27 @@ class Listing(Base):
         It returns a formatted string that includes all the attributes of the object.
     '''
     __tablename__ = 'listings'
-    id = Column(Integer, primary_key=True)
-    house_id = Column(Integer, ForeignKey('houses.id'))
-    seller_id = Column(Integer, ForeignKey('customers.id'))
-    listing_date = Column(DateTime, nullable=False, default=datetime.now)
-    listing_agent_id = Column(Integer, ForeignKey('agents.id'))
-    listing_office_id = Column(Integer, ForeignKey('offices.id'))
-    listing_price_IN_CENTS = Column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    house_id = Column(Integer, ForeignKey('houses_in_estate.id'), nullable=False)
+    seller_id = Column(Integer, ForeignKey('customers.id'), nullable=False)
+    listing_date = Column(DateTime, nullable=False)
+    listing_agent_id = Column(Integer, ForeignKey('agents.id'), nullable=False)
+    listing_office_id = Column(Integer, ForeignKey('offices.id'), nullable=False)
+    listing_price = Column(Integer, nullable=False) #in cents
     listing_state = Column(
-        Enum("AVAILABLE", "UNAVAILABLE", "SOLD"), default="AVAILABLE")
+        Enum("AVAILABLE", "UNAVAILABLE", "SOLD"), default="AVAILABLE", )
 
     def __repr__(self):
         return "<Listing(id={0}, house_id={1}, seller_id={2}, listing_date={3}, listing_agent_id={4}, listing_office_id={5},\
-            listing_price_IN_CENTS={6}, listing_state={7}>".format(self.id, self.house_id, self.seller_id, self.listing_date, self.listing_agent_id, self.listing_office_id, self.listing_price_IN_CENTS, self.listing_state)
+            listing_price={6}, listing_state={7}>".format(
+            self.id, 
+            self.house_id, 
+            self.seller_id, 
+            self.listing_date, 
+            self.listing_agent_id, 
+            self.listing_office_id, 
+            self.listing_price, 
+            self.listing_state)
 
 
 class House(Base):
@@ -63,51 +89,27 @@ class House(Base):
         __repr__(): A special method that returns a string representation of the House object.
         It returns a formatted string that includes all the attributes of the object.
     '''
-    __tablename__ = 'houses'
-    id = Column(Integer, primary_key=True)
+    __tablename__ = 'houses_in_estate'
+    id = Column(Integer, primary_key=True, autoincrement=True)
     no_of_bedrooms = Column(Integer, nullable=False)
     no_of_bathrooms = Column(Integer, nullable=False)
     address = Column(Text, nullable=False)
-    zip_code = Column(String(5), nullable=False)
+    zip_code = Column(Integer, nullable=False)
+    office = Column(Integer, ForeignKey('offices.id'), nullable=False)
     listings = relationship("Listing", backref="house")
 
     def __repr__(self):
-        return "<House(id={0}, no_of_bedrooms={1}, no_of_bathrooms={2}, address={3}, zip_code={4})>".format(self.id, self.no_of_bedrooms, self.no_of_bathrooms, self.address, self.zip_code)
-
-
-class Sale(Base):
-    '''
-    The Sale class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
-    It represents a house that has been sold.
-    Attributes:
-        __tablename__ (str): The name of the database table that corresponds to this model.
-        id (int): A unique identifier for each house sale. Primary key for the database table.
-        listing_id (int): Foreign key referencing the id of the house that was sold.
-        buyer_id (int): Foreign key referencing the id of the customer who bought the house.
-        sell_price_IN_CENTS (int): The price of the house that was sold, in cents.
-        sell_date (datetime): The date when the house was sold.
-        listing (Listing): A relationship to the Listing object that corresponds to the house that was sold.
-        
-    Methods:
-        __repr__(): A special method that returns a string representation of the Sale object.
-        It returns a formatted string that includes all the attributes of the object.
-    '''
-    __tablename__ = 'sales'
-    id = Column(Integer, primary_key=True)
-    listing_id = Column(Integer, ForeignKey('listings.id'))
-    buyer_id = Column(Integer, ForeignKey('customers.id'))
-    sell_price_IN_CENTS = Column(Integer, nullable=False)
-    sell_date = Column(DateTime, nullable=False, default=datetime.now)
-    listing = relationship("Listing", backref="sale", uselist=False)
-
-    def __repr__(self):
-        return "<Sale(id={0}, listing_id={1}, buyer_id={2}, sell_price_IN_CENTS={3}, sell_date={4}>".format(self.id, self.listing_id, self.buyer_id, self.sell_price_IN_CENTS, self.sell_date)
-
-
+        return "<House(id={0}, no_of_bedrooms={1}, no_of_bathrooms={2}, address={3}, zip_code={4})>".format(
+            self.id, 
+            self.no_of_bedrooms, 
+            self.no_of_bathrooms, 
+            self.address, 
+            self.zip_code)
+    
 class Agent(Base):
     '''
     The Agent class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
-    It represents an agent who lists houses for sale.
+    It represents an agent who lists houses_in_estate for sale.
 
     Attributes:
         __tablename__ (str): The name of the database table that corresponds to this model.
@@ -129,8 +131,109 @@ class Agent(Base):
     listings = relationship("Listing", backref="listing_agent")
 
     def __repr__(self):
-        return "<Agent(id={0}, firstName={1}, lastName={2}, emailAddress={3})>".format(self.id, self.firstName, self.lastName, self.emailAddress)
+        return "<Agent(id={0}, firstName={1}, lastName={2}, emailAddress={3})>".format(
+            self.id, 
+            self.firstName, 
+            self.lastName, 
+            self.emailAddress)
+    
+class AgentOffice(Base):
+    '''
+    The AgentOffice class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
+    It represents an agent who lists houses_in_estate for sale.
 
+    Attributes:
+        __tablename__ (str): The name of the database table that corresponds to this model.
+        id (int): A unique identifier for each agent. Primary key for the database table.
+        firstName (str): The first name of the agent.
+        lastName (str): The last name of the agent.
+
+    Methods:
+        __repr__(): A special method that returns a string representation of the Agent object.
+
+    '''
+    __tablename__ = "agent's office"
+    id = Column(Integer, primary_key=True)
+    agent_id = Column(Integer, ForeignKey('agents.id'))
+    office_id = Column(Integer, ForeignKey('offices.id'))
+
+    def __repr__(self):
+        return "<AgentOffice(id={0}, agent_id={1}, office_id={2})>".format(self.id, self.agent_id,
+                                                                                     self.office_id)
+
+
+class Office(Base):
+    '''
+    The Office class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
+    It represents an office where houses_in_estate are listed for sale.
+    
+    Attributes:
+        __tablename__ (str): The name of the database table that corresponds to this model.
+        id (int): A unique identifier for each office. Primary key for the database table.
+        office_name (str): The name of the office.
+        listings (List[Listing]): A relationship to the Listing objects that correspond to the house that is listed for sale.
+
+    Methods:
+        __repr__(): A special method that returns a string representation of the Office object.
+        It returns a formatted string that includes all the attributes of the object.
+    '''
+    __tablename__ = 'offices'
+    id = Column(Integer, primary_key=True)
+    office_name = Column(Text)
+    listings = relationship("Listing", backref="listing_office")
+
+    def __repr__(self):
+        return "<Office(id={0}, office_name={1})>".format(
+            self.id, 
+            self.office_name)
+
+
+class Sale(Base):
+    '''
+    The Sale class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
+    It represents a house that has been sold.
+    Attributes:
+        __tablename__ (str): The name of the database table that corresponds to this model.
+        id (int): A unique identifier for each house sale. Primary key for the database table.
+        listing_id (int): Foreign key referencing the id of the house that was sold.
+        buyer_id (int): Foreign key referencing the id of the customer who bought the house.
+        sale_price (int): The price of the house that was sold, in cents.
+        sell_date (datetime): The date when the house was sold.
+        listing (Listing): A relationship to the Listing object that corresponds to the house that was sold.
+        
+    Methods:
+        __repr__(): A special method that returns a string representation of the Sale object.
+        It returns a formatted string that includes all the attributes of the object.
+    '''
+    __tablename__ = 'sales'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    listing_id = Column(Integer, ForeignKey('listings.id'))
+    house_id = Column(Integer, ForeignKey('houses_in_estate.id'))
+    buyer_id = Column(Integer, ForeignKey('customers.id'))
+    sale_price = Column(Integer, nullable=False) #in cents
+    sell_date = Column(Date, nullable=False)
+    agent_id = Column(Integer, ForeignKey('agents.id'))
+    agent_commissions = column_property(
+        sale_price * 
+        case(
+            (sale_price < 100000, 0.1),
+            (sale_price < 200000, 0.075),
+            (sale_price < 500000, 0.06),
+            (sale_price < 1000000, 0.05),
+            (sale_price >= 1000000, 0.04)
+        )
+    )
+    listing = relationship("Listing", backref="sale", uselist=False)
+
+    def __repr__(self):
+        return "<Sale(id={0}, listing_id={1}, buyer_id={2}, sale_price={3}, sell_date={4}>".format(
+            self.id, 
+            self.listing_id, 
+            self.buyer_id, 
+            self.sale_price, 
+            self.sell_date,
+            self.agent_id,
+            self.agent_commissions)
 
 class Customer(Base):
     '''
@@ -159,34 +262,80 @@ class Customer(Base):
     listings = relationship("Listing", backref="seller")
 
     def __repr__(self):
-        return "<Customer(id={0}, firstName={1}, lastName={2}, emailAddress={3})>".format(self.id, self.firstName, self.lastName, self.emailAddress)
+        return "<Customer(id={0}, firstName={1}, lastName={2}, emailAddress={3})>".format(
+            self.id, 
+            self.firstName, 
+            self.lastName, 
+            self.emailAddress)
     
 
-class Office(Base):
+
+class AgentCommission(Base):
     '''
-    The Office class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
-    It represents an office where houses are listed for sale.
-    
+    The AgentCommission class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
+    It represents the commission that an agent receives for each sale.
+
     Attributes:
         __tablename__ (str): The name of the database table that corresponds to this model.
-        id (int): A unique identifier for each office. Primary key for the database table.
-        location (str): The location of the office.
-        listings (List[Listing]): A relationship to the Listing objects that correspond to the house that is listed for sale.
+        id (int): A unique identifier for each commission. Primary key for the database table.
+        agent_id (int): Foreign key referencing the id of the agent who receives the commission.
+        monthly_commission (int): The commission that the agent receives, in cents.
 
     Methods:
-        __repr__(): A special method that returns a string representation of the Office object.
+        __repr__(): A special method that returns a string representation of the AgentCommission object.
         It returns a formatted string that includes all the attributes of the object.
     '''
-    __tablename__ = 'offices'
-    id = Column(Integer, primary_key=True)
-    location = Column(Text, nullable=False, unique=True)
-    listings = relationship("Listing", backref="listing_office")
+    __tablename__ = 'agent_commissions'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # unique id
+    agent_id = Column(Integer, ForeignKey('agents.id'))  # id of the estate agent
+    monthly_commission = Column(Integer)  # commission that the estate agent must receive
 
     def __repr__(self):
-        return "<Office(id={0}, location={1})>".format(self.id, self.location)
+        return "<AgentCommission(id={0}, estate_agent_id={1}, monthly_commission={2}>".format(
+            self.id,
+            self.agent_id,
+            self.monthly_commission)
+
+class SalePriceSummary(Base):
+    '''
+    The SalePriceSummary class is an ORM (Object-Relational Mapping) model defined using SQLAlchemy.
+    It represents the total sale price of all houses that have been sold.
+
+    Attributes:
+        __tablename__ (str): The name of the database table that corresponds to this model.
+        id (int): A unique identifier for each sale price summary. Primary key for the database table.
+        total_sale (int): The total sale price of all houses that have been sold, in cents.
+
+    Methods:
+        __repr__(): A special method that returns a string representation of the SalePriceSummary object.
+        It returns a formatted string that includes all the attributes of the object.
+    '''
+
+    __tablename__ = 'summ_sale_prices'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # unique id
+    total_sale = Column(Integer)  # the sum of all sale prices
+
+    def __repr__(self):
+        return "<SalePriceSummary(id={0}, total_sale={1}>".format(
+            self.id,
+            self.total_sale)
 
 
 
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
+Session = sessionmaker(bind=engine)
+session = Session()
+
+#schema for all tables created
+#print(Base.metadata.tables)
+print(repr(Customer))
+print(repr(Listing))
+print(repr(Sale))
+print(repr(Agent))
+print(repr(House))
+print(repr(Office))
+print(repr(AgentCommission))
+print(repr(SalePriceSummary))
+print(repr(AgentOffice))
