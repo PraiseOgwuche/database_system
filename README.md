@@ -33,3 +33,6 @@ The application can be run with the following steps:
         python3 insert_data.py
         python3 query_data.py
         
+ 6. Running the unittest:
+
+        python3 -m unittest test_database
