@@ -22,8 +22,12 @@ The application can be run with the following steps:
  3. Install required python packages:
 
         pip install -r requirements.txt
+        
+ 4. Routing to the database folder:
+ 
+        cd database
 
- 4. Running the database (this prints out the outputs):
+ 5. Running the database (this prints out the outputs):
 
         python3 create.py
         python3 insert_data.py
