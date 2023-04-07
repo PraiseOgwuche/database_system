@@ -23,7 +23,7 @@ The application can be run with the following steps:
 
         pip install -r requirements.txt
 
- 4. Running the database:
+ 4. Running the database (this prints out the outputs):
 
         python3 create.py
         python3 insert_data.py
